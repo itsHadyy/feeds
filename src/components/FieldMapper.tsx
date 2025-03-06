@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, ChevronDown, MessageSquare, Shapes, PenSquare, Eye, Edit2, Save, X } from 'lucide-react';
+import { Search, ChevronDown, MessageSquare, Shapes, PenSquare, Eye, Edit2, Save } from 'lucide-react';
 
 interface Field {
   name: string;
@@ -17,23 +17,32 @@ const FieldMapper: React.FC<FieldMapperProps> = ({ fields, onFieldsUpdate }) => 
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState('input');
   const [editingField, setEditingField] = useState<string | null>(null);
-  const [categories] = useState<string[]>(['General', 'Product Info', 'Pricing', 'Media']);
+  const [selectedMapping, setSelectedMapping] = useState('Rename'); // Default mapping type
+  const [conditionType, setConditionType] = useState('All Products'); // Toggle between All Products & Only IF
+  const [selectedField, setSelectedField] = useState<string | null>(null);
+
+  const categories = ['General', 'Product Info', 'Pricing', 'Media'];
 
   const mappingTypes = [
-    { value: 'rename', label: 'Rename', description: 'Use values from the selected field from your shop.' },
-    { value: 'static', label: 'Add static value', description: 'Use a specific text as a value of this field.' },
-    { value: 'combine', label: 'Combine', description: 'Use content of more than one field combined together.' },
-    { value: 'lookup_table', label: 'Use lookup table', description: 'Use your shop\'s field and replace specific values.' },
-    { value: 'extract_from', label: 'Extract from', description: 'Extract specific text values from selected field.' },
-    { value: 'empty', label: 'Leave empty', description: 'Use empty value as the content.' },
+    { value: 'rename', label: 'Rename' },
+    { value: 'static', label: 'Add static value' },
+    { value: 'combine', label: 'Combine' },
+    { value: 'lookup_table', label: 'Use lookup table' },
+    { value: 'extract_from', label: 'Extract from' },
+    { value: 'empty', label: 'Leave empty' },
   ];
 
-  const toggleDropdown = (fieldName: string) => {
-    setActiveDropdown(activeDropdown === fieldName ? null : fieldName);
+  const toggleDropdown = (dropdown: string) => {
+    setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
+  };
+
+  const handleMappingSelection = (type: string) => {
+    setSelectedMapping(type);
+    setActiveDropdown(null);
   };
 
   const handleCategoryChange = (fieldName: string, newCategory: string) => {
-    const updatedFields = fields.map(field => 
+    const updatedFields = fields.map(field =>
       field.name === fieldName ? { ...field, category: newCategory } : field
     );
     onFieldsUpdate(updatedFields);
@@ -46,19 +55,9 @@ const FieldMapper: React.FC<FieldMapperProps> = ({ fields, onFieldsUpdate }) => 
     onFieldsUpdate(updatedFields);
   };
 
-  // Create a unique list of fields for the dropdown
-  const uniqueFields = Array.from(new Set(fields.map(f => f.name))).map(name => {
-    return fields.find(f => f.name === name)!;
-  });
-
-  // Group fields by category
-  const groupedFields = fields.reduce((acc, field) => {
-    if (!acc[field.category]) {
-      acc[field.category] = [];
-    }
-    acc[field.category].push(field);
-    return acc;
-  }, {} as Record<string, Field[]>);
+  const handleFieldSelection = (fieldName: string) => {
+    setSelectedField(fieldName);
+  };
 
   return (
     <div className="space-y-8">
@@ -87,17 +86,17 @@ const FieldMapper: React.FC<FieldMapperProps> = ({ fields, onFieldsUpdate }) => 
                     onClick={() => toggleDropdown('mapping-type')}
                     className="w-full px-3 py-2 text-left text-sm border rounded-md flex items-center justify-between bg-white"
                   >
-                    <span>Rename</span>
+                    <span>{selectedMapping}</span>
                     <ChevronDown className="h-4 w-4" />
                   </button>
-                  
+
                   {activeDropdown === 'mapping-type' && (
                     <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg">
                       {mappingTypes.map((type) => (
                         <button
                           key={type.value}
                           className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 flex items-center gap-2"
-                          onClick={() => toggleDropdown('mapping-type')}
+                          onClick={() => handleMappingSelection(type.label)}
                         >
                           <span>{type.label}</span>
                         </button>
@@ -112,10 +111,12 @@ const FieldMapper: React.FC<FieldMapperProps> = ({ fields, onFieldsUpdate }) => 
                 <div className="relative">
                   <select
                     className="w-full px-3 py-2 text-sm border rounded-md bg-white"
+                    value={selectedField || ''}
+                    onChange={(e) => handleFieldSelection(e.target.value)}
                   >
                     <option value="">Select field</option>
-                    {uniqueFields.map((f, index) => (
-                      <option key={`field-select-${f.name}-${index}`} value={f.name}>
+                    {fields.map((f) => (
+                      <option key={f.name} value={f.name}>
                         {f.name}
                       </option>
                     ))}
@@ -126,10 +127,20 @@ const FieldMapper: React.FC<FieldMapperProps> = ({ fields, onFieldsUpdate }) => 
               {/* Condition Toggle */}
               <div className="col-span-3">
                 <div className="flex rounded-md overflow-hidden border">
-                  <button className="flex-1 px-3 py-2 text-sm bg-white hover:bg-gray-50 border-r">
+                  <button
+                    className={`flex-1 px-3 py-2 text-sm ${
+                      conditionType === 'All Products' ? 'bg-blue-600 text-white' : 'bg-white hover:bg-gray-50'
+                    }`}
+                    onClick={() => setConditionType('All Products')}
+                  >
                     All Products
                   </button>
-                  <button className="flex-1 px-3 py-2 text-sm bg-white hover:bg-gray-50">
+                  <button
+                    className={`flex-1 px-3 py-2 text-sm ${
+                      conditionType === 'Only IF' ? 'bg-blue-600 text-white' : 'bg-white hover:bg-gray-50'
+                    }`}
+                    onClick={() => setConditionType('Only IF')}
+                  >
                     Only IF
                   </button>
                 </div>
@@ -152,80 +163,35 @@ const FieldMapper: React.FC<FieldMapperProps> = ({ fields, onFieldsUpdate }) => 
 
       {/* Mapped Fields Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        {Object.entries(groupedFields).map(([category, categoryFields]) => (
-          <div key={`category-${category}`} className="mb-8">
-            <h3 className="text-lg font-medium text-gray-700 px-6 py-4 border-b">
-              {category}
-            </h3>
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Field Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Value
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {categoryFields.map((field, index) => (
-                  <tr key={`${category}-${field.name}-${index}`}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {field.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {editingField === field.name ? (
-                        <input
-                          type="text"
-                          value={field.value}
-                          onChange={(e) => handleValueChange(field.name, e.target.value)}
-                          className="border rounded px-2 py-1 w-full"
-                        />
-                      ) : (
-                        field.value
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <select
-                        value={field.category}
-                        onChange={(e) => handleCategoryChange(field.name, e.target.value)}
-                        className="border rounded px-2 py-1"
-                      >
-                        {categories.map((cat) => (
-                          <option key={`${field.name}-category-${cat}`} value={cat}>
-                            {cat}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {editingField === field.name ? (
-                        <button
-                          onClick={() => setEditingField(null)}
-                          className="text-green-600 hover:text-green-900"
-                        >
-                          <Save className="h-4 w-4" />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setEditingField(field.name)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
+        {fields.map((field) => (
+          <div key={field.name} className="px-6 py-4 border-b">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-gray-900">{field.name}</span>
+              {editingField === field.name ? (
+                <input
+                  type="text"
+                  value={field.value}
+                  onChange={(e) => handleValueChange(field.name, e.target.value)}
+                  className="border rounded px-2 py-1 w-full"
+                />
+              ) : (
+                <span className="text-sm text-gray-500">{field.value}</span>
+              )}
+              <select
+                value={field.category}
+                onChange={(e) => handleCategoryChange(field.name, e.target.value)}
+                className="border rounded px-2 py-1"
+              >
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
                 ))}
-              </tbody>
-            </table>
+              </select>
+              <button onClick={() => setEditingField(field.name)}>
+                <Edit2 className="h-4 w-4 text-blue-600" />
+              </button>
+            </div>
           </div>
         ))}
       </div>

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Save } from 'lucide-react';
 import MappingField from './components/MappingField';
 import XMLUploader from './components/XMLUploader';
@@ -6,12 +6,14 @@ import ShopDashboard from './components/ShopDashboard';
 import { FieldOption } from './types/mapping';
 import { XMLData, XMLField, XMLMapping } from './types/xml';
 import { XMLManager } from './services/XMLManager';
+import useShops from './hooks/useShops';
 
 function App() {
   const [xmlManager] = useState(() => new XMLManager());
   const [mappingFields, setMappingFields] = useState<XMLField[]>([]);
   const [mappings, setMappings] = useState<XMLMapping[]>([]);
   const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
+  const { shops, addShop, uploadXMLToShop } = useShops();
 
   // Get available field options for mapping
   const getFieldOptions = useCallback((xmlData: XMLData | null): FieldOption[] => {
@@ -64,6 +66,46 @@ function App() {
     }
   }, [xmlManager, mappings]);
 
+  // Load XML content for the selected shop
+  useEffect(() => {
+    if (selectedShopId) {
+      const selectedShop = shops.find(shop => shop.id === selectedShopId);
+      if (selectedShop && selectedShop.xmlContent) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(selectedShop.xmlContent, 'text/xml');
+        const items = xmlDoc.getElementsByTagName('item');
+        const schema = new Map<string, { required?: boolean; helpText?: string }>();
+        Array.from(items).forEach((item) => {
+          Array.from(item.children).forEach((child) => {
+            if (!schema.has(child.nodeName)) {
+              schema.set(child.nodeName, {
+                required: child.hasAttribute('required'),
+                helpText: child.getAttribute('description') || undefined,
+              });
+            }
+          });
+        });
+
+        const itemsData = Array.from(items).map((item) => {
+          const itemData: { [key: string]: string } = {};
+          Array.from(item.children).forEach((child) => {
+            if (child.textContent) {
+              itemData[child.nodeName] = child.textContent;
+            }
+          });
+          return itemData;
+        });
+
+        const schemaArray = Array.from(schema.entries()).map(([name, props]) => ({
+          name,
+          ...props,
+        }));
+
+        handleFieldsExtracted({ items: itemsData, schema: schemaArray });
+      }
+    }
+  }, [selectedShopId, shops, handleFieldsExtracted]);
+
   const xmlData = xmlManager.getData();
 
   return (
@@ -94,8 +136,8 @@ function App() {
                       onClick={handleApplyChanges}
                       disabled={mappings.length === 0}
                       className={`flex items-center gap-2 px-4 py-2 rounded-md ${mappings.length === 0
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
                         }`}
                     >
                       <Save className="h-4 w-4" />
@@ -104,7 +146,7 @@ function App() {
                   </div>
                 )}
               </div>
-              <XMLUploader onFieldsExtracted={handleFieldsExtracted} />
+              <XMLUploader shopId={selectedShopId} onFieldsExtracted={handleFieldsExtracted} />
             </div>
 
             {/* Field Mapping Section */}
@@ -127,7 +169,7 @@ function App() {
               </div>
             )}
 
-            
+
           </>
         )}
 
