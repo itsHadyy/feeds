@@ -16,7 +16,7 @@ const XMLUploader: React.FC<XMLUploaderProps> = ({ onFieldsExtracted, shopId }) 
   const [error, setError] = useState<string | null>(null);
   const { uploadXMLToShop } = useShops();
   const [xmlContent, setXmlContent] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState<boolean>(false); // State for save confirmation
+  const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
   const parseXMLContent = (text: string) => {
     try {
@@ -96,11 +96,26 @@ const XMLUploader: React.FC<XMLUploaderProps> = ({ onFieldsExtracted, shopId }) 
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (xmlContent && shopId) {
-      uploadXMLToShop(shopId, xmlContent); // Save XML content to the shop
-      setSaveSuccess(true); // Show success message
-      setTimeout(() => setSaveSuccess(false), 3000); // Hide success message after 3 seconds
+      try {
+        // Log the size of the XML content
+        console.log("XML Content Size:", xmlContent.length);
+
+        // Check if the content exceeds localStorage quota
+        if (xmlContent.length > 5 * 1024 * 1024) { // 5MB limit
+          throw new Error("XML content is too large for localStorage. Consider using a backend database.");
+        }
+
+        await uploadXMLToShop(shopId, xmlContent); // Save XML content to the shop
+        setSaveSuccess(true); // Show success message
+        setTimeout(() => setSaveSuccess(false), 3000); // Hide success message after 3 seconds
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error saving XML');
+        console.error("Error saving XML:", err);
+      }
+    } else {
+      setError("No XML content or shop ID provided.");
     }
   };
 

@@ -10,7 +10,7 @@ import {
 } from "@radix-ui/react-dropdown-menu";
 import { ChevronDownIcon } from "@radix-ui/react-icons";
 import { CopyIcon } from "@radix-ui/react-icons";
-import { EditIcon, SaveIcon, TrashIcon, CheckIcon } from "lucide-react"; // Import valid icons
+import { EditIcon, SaveIcon, TrashIcon, CheckIcon } from "lucide-react";
 
 interface ShopDashboardProps {
     onSelectShop: (shopId: string) => void;
@@ -21,7 +21,20 @@ const ShopDashboard: React.FC<ShopDashboardProps> = ({ onSelectShop }) => {
     const [editingShopId, setEditingShopId] = useState<string | null>(null);
     const [editedName, setEditedName] = useState<string>("");
     const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
-    const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null); // Track which shop's delete modal is open
+    const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
+
+    // Helper function to count products in XML
+    const countProductsInXML = (xmlContent: string): number => {
+        try {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlContent, "text/xml");
+            const items = xmlDoc.getElementsByTagName("item");
+            return items.length;
+        } catch (err) {
+            console.error("Error parsing XML:", err);
+            return 0;
+        }
+    };
 
     const handleEditClick = (shopId: string, currentName: string) => {
         setEditingShopId(shopId);
@@ -44,7 +57,7 @@ const ShopDashboard: React.FC<ShopDashboardProps> = ({ onSelectShop }) => {
 
     const handleDeleteShop = (shopId: string) => {
         deleteShop(shopId);
-        setShowDeleteModal(null); // Close the modal after deletion
+        setShowDeleteModal(null);
     };
 
     return (
@@ -63,6 +76,7 @@ const ShopDashboard: React.FC<ShopDashboardProps> = ({ onSelectShop }) => {
                         <th style={{ border: "1px solid #ddd", padding: "8px" }}>Source Link</th>
                         <th style={{ border: "1px solid #ddd", padding: "8px" }}>File Type</th>
                         <th style={{ border: "1px solid #ddd", padding: "8px" }}>Last Update</th>
+                        <th style={{ border: "1px solid #ddd", padding: "8px" }}>Product Count</th>
                         <th style={{ border: "1px solid #ddd", padding: "8px" }}>Options</th>
                     </tr>
                 </thead>
@@ -70,7 +84,7 @@ const ShopDashboard: React.FC<ShopDashboardProps> = ({ onSelectShop }) => {
                     {shops.map((shop) => (
                         <tr
                             key={shop.id}
-                            onClick={() => handleSelectShop(shop.id)} // Add onClick handler to the row
+                            onClick={() => handleSelectShop(shop.id)}
                             className="cursor-pointer hover:bg-gray-50 transition-colors"
                         >
                             <td style={{ border: "1px solid #ddd", padding: "8px" }}>{shop.id}</td>
@@ -104,13 +118,16 @@ const ShopDashboard: React.FC<ShopDashboardProps> = ({ onSelectShop }) => {
                             </td>
                             <td style={{ border: "1px solid #ddd", padding: "8px" }}>XML</td>
                             <td style={{ border: "1px solid #ddd", padding: "8px" }}>N/A</td>
+                            <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                {shop.xmlContent ? countProductsInXML(shop.xmlContent) : "N/A"}
+                            </td>
                             <th style={{ border: "1px solid #ddd", padding: "8px" }}>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger
                                         className="px-3 py-1 text-white bg-gray-500 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all"
                                         asChild
                                     >
-                                        <button onClick={(e) => e.stopPropagation()}> {/* Prevent row click from triggering dropdown */}
+                                        <button onClick={(e) => e.stopPropagation()}>
                                             Options <ChevronDownIcon className="inline-block ml-2 h-4 w-4" />
                                         </button>
                                     </DropdownMenuTrigger>
@@ -121,7 +138,10 @@ const ShopDashboard: React.FC<ShopDashboardProps> = ({ onSelectShop }) => {
                                     >
                                         {editingShopId === shop.id ? (
                                             <DropdownMenuItem
-                                                onClick={() => handleSaveEdit(shop.id)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation(); // Stop event propagation
+                                                    handleSaveEdit(shop.id);
+                                                }}
                                                 className="px-3 py-2 text-sm text-green-700 hover:bg-green-50 rounded-md flex items-center gap-2 cursor-pointer transition-colors"
                                             >
                                                 <SaveIcon className="h-4 w-4" />
@@ -129,7 +149,10 @@ const ShopDashboard: React.FC<ShopDashboardProps> = ({ onSelectShop }) => {
                                             </DropdownMenuItem>
                                         ) : (
                                             <DropdownMenuItem
-                                                onClick={() => handleEditClick(shop.id, shop.name)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation(); // Stop event propagation
+                                                    handleEditClick(shop.id, shop.name);
+                                                }}
                                                 className="px-3 py-2 text-sm text-yellow-700 hover:bg-yellow-50 rounded-md flex items-center gap-2 cursor-pointer transition-colors"
                                             >
                                                 <EditIcon className="h-4 w-4" />
@@ -137,14 +160,20 @@ const ShopDashboard: React.FC<ShopDashboardProps> = ({ onSelectShop }) => {
                                             </DropdownMenuItem>
                                         )}
                                         <DropdownMenuItem
-                                            onClick={() => handleSelectShop(shop.id)}
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // Stop event propagation
+                                                handleSelectShop(shop.id);
+                                            }}
                                             className="px-3 py-2 text-sm text-blue-700 hover:bg-blue-50 rounded-md flex items-center gap-2 cursor-pointer transition-colors"
                                         >
                                             <CheckIcon className="h-4 w-4" />
                                             <span>Select</span>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
-                                            onClick={() => setShowDeleteModal(shop.id)}
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // Stop event propagation
+                                                setShowDeleteModal(shop.id);
+                                            }}
                                             className="px-3 py-2 text-sm text-red-700 hover:bg-red-50 rounded-md flex items-center gap-2 cursor-pointer transition-colors"
                                         >
                                             <TrashIcon className="h-4 w-4" />
