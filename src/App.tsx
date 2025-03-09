@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Save, Undo } from 'lucide-react'; // Import Undo icon for Cancel Changes
+import { Save, Undo, Settings, ArrowLeft } from 'lucide-react'; // Import icons
 import MappingField from './components/MappingField';
 import XMLUploader from './components/XMLUploader';
 import ShopDashboard from './components/ShopDashboard';
@@ -13,7 +13,7 @@ function App() {
   const [mappingFields, setMappingFields] = useState<XMLField[]>([]);
   const [mappings, setMappings] = useState<XMLMapping[]>([]);
   const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
-  const { shops, addShop, uploadXMLToShop } = useShops();
+  const { shops, addShop, deleteShop, updateShop, uploadXMLToShop } = useShops();
 
   // State for comments, preview, and unsaved changes
   const [comments, setComments] = useState<{ [fieldName: string]: string }>({});
@@ -25,6 +25,12 @@ function App() {
     comments: { [fieldName: string]: string };
     mappingFields: XMLField[];
   }>({ mappings: [], comments: {}, mappingFields: [] }); // Track last saved state
+
+  // State for settings view
+  const [showSettings, setShowSettings] = useState(false);
+
+  // State for feedback messages
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
   // Load comments from localStorage on component mount
   useEffect(() => {
@@ -82,16 +88,20 @@ function App() {
     console.log('Changes saved');
     setHasUnsavedChanges(false); // Mark changes as saved
     setLastSavedState({ mappings, comments, mappingFields }); // Update last saved state
+    setFeedbackMessage('Changes saved successfully!');
+    setTimeout(() => setFeedbackMessage(null), 3000); // Clear feedback message after 3 seconds
     // Add your save logic here (e.g., save to backend)
   }, [mappings, comments, mappingFields]);
 
-  // Handle cancel changes button click
-  const handleCancelChanges = useCallback(() => {
-    console.log('Changes canceled');
-    setHasUnsavedChanges(false); // Mark changes as canceled
+  // Handle discard changes button click
+  const handleDiscardChanges = useCallback(() => {
+    console.log('Changes discarded');
+    setHasUnsavedChanges(false); // Mark changes as discarded
     setMappings(lastSavedState.mappings); // Revert to last saved mappings
     setComments(lastSavedState.comments); // Revert to last saved comments
     setMappingFields(lastSavedState.mappingFields); // Revert to last saved mapping fields
+    setFeedbackMessage('Changes discarded successfully!');
+    setTimeout(() => setFeedbackMessage(null), 3000); // Clear feedback message after 3 seconds
   }, [lastSavedState]);
 
   // Handle navigation away without saving
@@ -118,6 +128,7 @@ function App() {
       if (!confirmNavigation) return;
     }
     setSelectedShopId(null);
+    setShowSettings(false); // Reset settings view
   };
 
   // Extract fields from uploaded XML
@@ -216,82 +227,155 @@ function App() {
           <ShopDashboard onSelectShop={setSelectedShopId} />
         ) : (
           <>
-            <button
-              onClick={handleBackClick}
-              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors"
-            >
-              Back to Shops
-            </button>
+            {/* Navigation Bar */}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                {/* Settings Button */}
+                <button
+                  onClick={() => setShowSettings(!showSettings)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+                >
+                  <Settings className="h-4 w-4 inline-block mr-2" />
+                  Settings
+                </button>
 
-            <h2 className="text-2xl font-semibold mt-4">Shop ID: {selectedShopId}</h2>
-
-            {/* XML Upload Section */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Upload XML File</h2>
-                {mappingFields.length > 0 && (
-                  <div className="flex gap-2">
-                    {/* Save Button */}
-                    <button
-                      onClick={handleSaveClick}
-                      disabled={!hasUnsavedChanges}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${!hasUnsavedChanges
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-green-600 text-white hover:bg-green-700'
-                        }`}
-                    >
-                      <Save className="h-4 w-4" />
-                      <span>Save Changes</span>
-                    </button>
-
-                    {/* Cancel Changes Button */}
-                    <button
-                      onClick={handleCancelChanges}
-                      disabled={!hasUnsavedChanges}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${!hasUnsavedChanges
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-red-600 text-white hover:bg-red-700'
-                        }`}
-                    >
-                      <Undo className="h-4 w-4" />
-                      <span>Cancel Changes</span>
-                    </button>
-
-                    {/* Apply & Download Button */}
-                    <button
-                      onClick={handleApplyChanges}
-                      disabled={mappings.length === 0}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${mappings.length === 0
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
-                    >
-                      <Save className="h-4 w-4" />
-                      <span>Apply & Download</span>
-                    </button>
-                  </div>
-                )}
+                {/* Back Button */}
+                <button
+                  onClick={handleBackClick}
+                  className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4 inline-block mr-2" />
+                  Back to Shops
+                </button>
               </div>
-              <XMLUploader shopId={selectedShopId} onFieldsExtracted={handleFieldsExtracted} />
             </div>
 
-            {/* Field Mapping Section */}
-            {mappingFields.length > 0 && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                {mappingFields.map((field) => (
-                  <MappingField
-                    key={field.name}
-                    fieldName={field.name}
-                    fieldValue={field.value}
-                    fieldOptions={getFieldOptions(xmlData)}
-                    helpText={field.helpText}
-                    onFieldChange={(mapping) => handleFieldChange(field.name, mapping)}
-                    onPreviewClick={() => handlePreviewClick(field)}
-                    onCommentClick={() => handleCommentClick(field.name)}
-                    onABTestClick={() => console.log('A/B Test clicked')}
-                    onEditClick={() => console.log('Edit clicked')}
+            {/* Shop Name and ID */}
+            <div className="mt-4">
+              <h2 className="text-2xl font-semibold">
+                {shops.find((shop) => shop.id === selectedShopId)?.name}
+              </h2>
+              <p className="text-sm text-gray-500">ID: {selectedShopId}</p>
+            </div>
+
+            {/* Settings View */}
+            {showSettings ? (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold mb-4">Settings</h3>
+
+                {/* Change Shop Name */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Change Shop Name
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={shops.find((shop) => shop.id === selectedShopId)?.name || ''}
+                      onChange={(e) => {
+                        const newName = e.target.value;
+                        updateShop(selectedShopId, newName);
+                        setHasUnsavedChanges(true); // Mark changes as unsaved
+                      }}
+                      className="flex-1 px-2 py-1 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                </div>
+
+                {/* Re-upload XML */}
+                <div className="mb-6">
+                  <h4 className="text-md font-semibold mb-2">Re-upload XML</h4>
+                  <XMLUploader
+                    shopId={selectedShopId}
+                    onFieldsExtracted={handleFieldsExtracted}
                   />
-                ))}
+                </div>
+
+                {/* Delete Shop */}
+                <div>
+                  <button
+                    onClick={() => deleteShop(selectedShopId)}
+                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                  >
+                    Delete Shop
+                  </button>
+                </div>
+
+                {/* Save and Discard Changes Buttons */}
+                <div className="flex justify-end gap-4 mt-6">
+                  <button
+                    onClick={handleDiscardChanges}
+                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                  >
+                    <Undo className="h-4 w-4 inline-block mr-2" />
+                    Discard Changes
+                  </button>
+                  <button
+                    onClick={handleSaveClick}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    <Save className="h-4 w-4 inline-block mr-2" />
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* XML Upload Section (Visible only during shop creation) */}
+                {!shops.find((shop) => shop.id === selectedShopId)?.xmlContent && (
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload XML File</h2>
+                    <XMLUploader
+                      shopId={selectedShopId}
+                      onFieldsExtracted={handleFieldsExtracted}
+                    />
+                  </div>
+                )}
+
+                {/* Field Mapping Section */}
+                {mappingFields.length > 0 && (
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                    {mappingFields.map((field) => (
+                      <MappingField
+                        key={field.name}
+                        fieldName={field.name}
+                        fieldValue={field.value}
+                        fieldOptions={getFieldOptions(xmlData)}
+                        helpText={field.helpText}
+                        onFieldChange={(mapping) => handleFieldChange(field.name, mapping)}
+                        onPreviewClick={() => handlePreviewClick(field)}
+                        onCommentClick={() => handleCommentClick(field.name)}
+                        onABTestClick={() => console.log('A/B Test clicked')}
+                        onEditClick={() => console.log('Edit clicked')}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Save and Discard Changes Buttons */}
+                <div className="flex justify-end gap-4 mt-6">
+                  <button
+                    onClick={handleDiscardChanges}
+                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                  >
+                    <Undo className="h-4 w-4 inline-block mr-2" />
+                    Discard Changes
+                  </button>
+                  <button
+                    onClick={handleSaveClick}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    <Save className="h-4 w-4 inline-block mr-2" />
+                    Save Changes
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Feedback Message */}
+            {feedbackMessage && (
+              <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg">
+                {feedbackMessage}
               </div>
             )}
 

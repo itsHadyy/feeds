@@ -6,9 +6,10 @@ import useShops from "../hooks/useShops";
 interface XMLUploaderProps {
   onFieldsExtracted: (data: XMLData) => void;
   shopId: string;
+  onUploadSuccess?: () => void; // Callback for successful upload
 }
 
-const XMLUploader: React.FC<XMLUploaderProps> = ({ onFieldsExtracted, shopId }) => {
+const XMLUploader: React.FC<XMLUploaderProps> = ({ onFieldsExtracted, shopId, onUploadSuccess }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [xmlUrl, setXmlUrl] = useState<string>('');
@@ -110,6 +111,11 @@ const XMLUploader: React.FC<XMLUploaderProps> = ({ onFieldsExtracted, shopId }) 
         await uploadXMLToShop(shopId, xmlContent); // Save XML content to the shop
         setSaveSuccess(true); // Show success message
         setTimeout(() => setSaveSuccess(false), 3000); // Hide success message after 3 seconds
+
+        // Trigger the onUploadSuccess callback if provided
+        if (onUploadSuccess) {
+          onUploadSuccess();
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error saving XML');
         console.error("Error saving XML:", err);

@@ -87,7 +87,6 @@ const ShopDashboard: React.FC<ShopDashboardProps> = ({ onSelectShop }) => {
                         <th style={{ border: "1px solid #ddd", padding: "8px" }}>File Type</th>
                         <th style={{ border: "1px solid #ddd", padding: "8px" }}>Last Update</th>
                         <th style={{ border: "1px solid #ddd", padding: "8px" }}>Product Count</th>
-                        <th style={{ border: "1px solid #ddd", padding: "8px" }}>Options</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -128,67 +127,6 @@ const ShopDashboard: React.FC<ShopDashboardProps> = ({ onSelectShop }) => {
                             <td style={{ border: "1px solid #ddd", padding: "8px" }}>
                                 {shop.xmlContent ? countProductsInXML(shop.xmlContent) : "N/A"}
                             </td>
-                            <th style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger
-                                        className="px-3 py-1 text-white bg-gray-500 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all"
-                                        asChild
-                                    >
-                                        <button onClick={(e) => e.stopPropagation()}>
-                                            Options <ChevronDownIcon className="inline-block ml-2 h-4 w-4" />
-                                        </button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                        className="bg-white shadow-lg rounded-md p-2 min-w-[160px] border border-gray-200"
-                                        side="bottom"
-                                        align="end"
-                                    >
-                                        {editingShopId === shop.id ? (
-                                            <DropdownMenuItem
-                                                onClick={(e) => {
-                                                    e.stopPropagation(); // Stop event propagation
-                                                    handleSaveEdit(shop.id);
-                                                }}
-                                                className="px-3 py-2 text-sm text-green-700 hover:bg-green-50 rounded-md flex items-center gap-2 cursor-pointer transition-colors"
-                                            >
-                                                <SaveIcon className="h-4 w-4" />
-                                                <span>Save</span>
-                                            </DropdownMenuItem>
-                                        ) : (
-                                            <DropdownMenuItem
-                                                onClick={(e) => {
-                                                    e.stopPropagation(); // Stop event propagation
-                                                    handleEditClick(shop.id, shop.name);
-                                                }}
-                                                className="px-3 py-2 text-sm text-yellow-700 hover:bg-yellow-50 rounded-md flex items-center gap-2 cursor-pointer transition-colors"
-                                            >
-                                                <EditIcon className="h-4 w-4" />
-                                                <span>Edit</span>
-                                            </DropdownMenuItem>
-                                        )}
-                                        <DropdownMenuItem
-                                            onClick={(e) => {
-                                                e.stopPropagation(); // Stop event propagation
-                                                handleSelectShop(shop.id);
-                                            }}
-                                            className="px-3 py-2 text-sm text-blue-700 hover:bg-blue-50 rounded-md flex items-center gap-2 cursor-pointer transition-colors"
-                                        >
-                                            <CheckIcon className="h-4 w-4" />
-                                            <span>Select</span>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                            onClick={(e) => {
-                                                e.stopPropagation(); // Stop event propagation
-                                                setShowDeleteModal(shop.id);
-                                            }}
-                                            className="px-3 py-2 text-sm text-red-700 hover:bg-red-50 rounded-md flex items-center gap-2 cursor-pointer transition-colors"
-                                        >
-                                            <TrashIcon className="h-4 w-4" />
-                                            <span>Delete</span>
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </th>
                         </tr>
                     ))}
                 </tbody>
