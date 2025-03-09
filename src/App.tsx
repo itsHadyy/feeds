@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Save, Undo, Settings, ArrowLeft } from 'lucide-react'; // Import icons
+import { Save, Undo, Settings, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'; // Import icons
 import MappingField from './components/MappingField';
 import XMLUploader from './components/XMLUploader';
 import ShopDashboard from './components/ShopDashboard';
@@ -26,11 +26,44 @@ function App() {
     mappingFields: XMLField[];
   }>({ mappings: [], comments: {}, mappingFields: [] }); // Track last saved state
 
+  // Temporary state for unsaved changes
+  const [tempMappings, setTempMappings] = useState<XMLMapping[]>([]);
+  const [tempComments, setTempComments] = useState<{ [fieldName: string]: string }>({});
+  const [tempMappingFields, setTempMappingFields] = useState<XMLField[]>([]);
+
   // State for settings view
   const [showSettings, setShowSettings] = useState(false);
 
   // State for feedback messages
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+
+  // State for preview data (table rows)
+  const [previewData, setPreviewData] = useState<
+    {
+      productId: string;
+      title: string;
+      fieldsUsedInMapping: string; // Original value from XML
+      channelField: string; // Mapped value (editable)
+    }[]
+  >([]);
+
+  // State for pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // Number of items to display per page
+
+  // Calculate total pages
+  const totalPages = Math.ceil(previewData.length / itemsPerPage);
+
+  // Get current items for the current page
+  const currentItems = previewData.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   // Load comments from localStorage on component mount
   useEffect(() => {
@@ -42,6 +75,7 @@ function App() {
       }
     });
     setComments(savedComments);
+    setTempComments(savedComments); // Initialize temp comments
   }, [mappingFields]);
 
   // Get available field options for mapping
@@ -60,7 +94,7 @@ function App() {
 
   // Handle field mapping changes
   const handleFieldChange = useCallback((fieldName: string, mapping: XMLMapping) => {
-    setMappings((prev) => {
+    setTempMappings((prev) => {
       const existingIndex = prev.findIndex((m) => m.targetField === fieldName);
       if (existingIndex >= 0) {
         const updated = [...prev];
@@ -73,8 +107,8 @@ function App() {
     // Mark changes as unsaved
     setHasUnsavedChanges(true);
 
-    // Update the field value in mappingFields
-    setMappingFields((prev) =>
+    // Update the field value in tempMappingFields
+    setTempMappingFields((prev) =>
       prev.map((field) =>
         field.name === fieldName
           ? { ...field, value: mapping.value || field.value }
@@ -87,19 +121,21 @@ function App() {
   const handleSaveClick = useCallback(() => {
     console.log('Changes saved');
     setHasUnsavedChanges(false); // Mark changes as saved
-    setLastSavedState({ mappings, comments, mappingFields }); // Update last saved state
+    setMappings(tempMappings); // Update actual mappings
+    setComments(tempComments); // Update actual comments
+    setMappingFields(tempMappingFields); // Update actual mapping fields
+    setLastSavedState({ mappings: tempMappings, comments: tempComments, mappingFields: tempMappingFields }); // Update last saved state
     setFeedbackMessage('Changes saved successfully!');
     setTimeout(() => setFeedbackMessage(null), 3000); // Clear feedback message after 3 seconds
-    // Add your save logic here (e.g., save to backend)
-  }, [mappings, comments, mappingFields]);
+  }, [tempMappings, tempComments, tempMappingFields]);
 
   // Handle discard changes button click
   const handleDiscardChanges = useCallback(() => {
     console.log('Changes discarded');
     setHasUnsavedChanges(false); // Mark changes as discarded
-    setMappings(lastSavedState.mappings); // Revert to last saved mappings
-    setComments(lastSavedState.comments); // Revert to last saved comments
-    setMappingFields(lastSavedState.mappingFields); // Revert to last saved mapping fields
+    setTempMappings(lastSavedState.mappings); // Revert to last saved mappings
+    setTempComments(lastSavedState.comments); // Revert to last saved comments
+    setTempMappingFields(lastSavedState.mappingFields); // Revert to last saved mapping fields
     setFeedbackMessage('Changes discarded successfully!');
     setTimeout(() => setFeedbackMessage(null), 3000); // Clear feedback message after 3 seconds
   }, [lastSavedState]);
@@ -142,7 +178,9 @@ function App() {
       helpText: data.schema.find((s) => s.name === field)?.helpText,
     }));
     setMappingFields(newMappingFields);
+    setTempMappingFields(newMappingFields); // Initialize temp mapping fields
     setMappings([]);
+    setTempMappings([]); // Initialize temp mappings
     setLastSavedState({ mappings: [], comments: {}, mappingFields: newMappingFields }); // Initialize last saved state
   }, [xmlManager]);
 
@@ -202,11 +240,11 @@ function App() {
     console.log('Comments button clicked for field:', fieldName);
     const comment = prompt('Enter your comment:');
     if (comment !== null) {
-      setComments((prev) => ({
+      setTempComments((prev) => ({
         ...prev,
         [fieldName]: comment,
       }));
-      localStorage.setItem(`comments-${fieldName}`, comment);
+      setHasUnsavedChanges(true); // Mark changes as unsaved
     }
   };
 
@@ -214,7 +252,29 @@ function App() {
   const handlePreviewClick = (field: XMLField) => {
     console.log('Preview button clicked for field:', field.name);
     setPreviewField(field);
+
+    // Parse the XML data to extract preview data
+    const xmlData = xmlManager.getData();
+    if (xmlData) {
+      const previewRows = xmlData.items.map((item) => ({
+        productId: item.productId || 'N/A', // Replace with actual field name for product ID
+        title: item.title || 'N/A', // Replace with actual field name for title
+        fieldsUsedInMapping: field.name, // Use the field name as the fields used in mapping
+        channelField: item[field.name] || 'N/A', // Use the field value as the channel field
+      }));
+      setPreviewData(previewRows);
+    }
+
     setShowPreviewDialog(true);
+  };
+
+  // Handle channel field change in preview dialog
+  const handleChannelFieldChange = (index: number, value: string) => {
+    setPreviewData((prev) =>
+      prev.map((row, i) =>
+        i === index ? { ...row, channelField: value } : row
+      )
+    );
   };
 
   const xmlData = xmlManager.getData();
@@ -250,13 +310,10 @@ function App() {
               </div>
             </div>
 
-            {/* Shop Name and ID */}
-            <div className="mt-4">
-              <h2 className="text-2xl font-semibold">
-                {shops.find((shop) => shop.id === selectedShopId)?.name}
-              </h2>
-              <p className="text-sm text-gray-500">ID: {selectedShopId}</p>
-            </div>
+            {/* Shop Name */}
+            <h2 className="text-2xl font-semibold mt-4">
+              {shops.find((shop) => shop.id === selectedShopId)?.name}
+            </h2>
 
             {/* Settings View */}
             {showSettings ? (
@@ -275,7 +332,6 @@ function App() {
                       onChange={(e) => {
                         const newName = e.target.value;
                         updateShop(selectedShopId, newName);
-                        setHasUnsavedChanges(true); // Mark changes as unsaved
                       }}
                       className="flex-1 px-2 py-1 border border-gray-300 rounded-md"
                     />
@@ -333,9 +389,9 @@ function App() {
                 )}
 
                 {/* Field Mapping Section */}
-                {mappingFields.length > 0 && (
+                {tempMappingFields.length > 0 && (
                   <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                    {mappingFields.map((field) => (
+                    {tempMappingFields.map((field) => (
                       <MappingField
                         key={field.name}
                         fieldName={field.name}
@@ -372,29 +428,67 @@ function App() {
               </>
             )}
 
-            {/* Feedback Message */}
-            {feedbackMessage && (
-              <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg">
-                {feedbackMessage}
-              </div>
-            )}
-
             {/* Preview Dialog */}
-            {showPreviewDialog && previewField && (
+            {showPreviewDialog && previewData.length > 0 && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                <div className="bg-white p-6 rounded-lg w-96">
-                  <h2 className="text-lg font-semibold mb-4">Preview: {previewField.name}</h2>
-                  <div className="space-y-2">
-                    <p>
-                      <strong>Field Name:</strong> {previewField.name}
-                    </p>
-                    <p>
-                      <strong>Field Value:</strong> {previewField.value}
-                    </p>
-                    <p>
-                      <strong>Comment:</strong> {comments[previewField.name] || 'No comment'}
-                    </p>
+                <div className="bg-white p-6 rounded-lg w-full max-w-4xl">
+                  <h2 className="text-lg font-semibold mb-4">Preview</h2>
+                  <table className="w-full border-collapse border border-gray-300">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="border border-gray-300 p-2">Product ID</th>
+                        <th className="border border-gray-300 p-2">Title</th>
+                        <th className="border border-gray-300 p-2">Fields used in mapping</th>
+                        <th className="border border-gray-300 p-2">Channel Field (Output)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentItems.map((row, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="border border-gray-300 p-2">{row.productId}</td>
+                          <td className="border border-gray-300 p-2">{row.title}</td>
+                          <td className="border border-gray-300 p-2">{row.fieldsUsedInMapping}</td>
+                          <td className="border border-gray-300 p-2">
+                            <input
+                              type="text"
+                              value={row.channelField}
+                              onChange={(e) =>
+                                handleChannelFieldChange(
+                                  (currentPage - 1) * itemsPerPage + index,
+                                  e.target.value
+                                )
+                              }
+                              className="w-full px-2 py-1 border border-gray-300 rounded-md"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* Pagination */}
+                  <div className="mt-4 flex justify-between items-center">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                      <ChevronLeft className="h-4 w-4 inline-block mr-2" />
+                      Previous
+                    </button>
+                    <span>
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4 inline-block ml-2" />
+                    </button>
                   </div>
+
                   <div className="mt-4 flex justify-end">
                     <button
                       onClick={() => setShowPreviewDialog(false)}

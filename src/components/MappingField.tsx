@@ -146,7 +146,7 @@ const MappingField: React.FC<MappingFieldProps> = ({
               <MessageSquare className="h-4 w-4" />
               <span>Comments</span>
             </button>
-            <button
+            {/* <button
               onClick={onABTestClick}
               disabled={isLocked}
               className={`btn-sm flex items-center gap-2 ${isLocked ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-800'
@@ -154,7 +154,7 @@ const MappingField: React.FC<MappingFieldProps> = ({
             >
               <Shapes className="h-4 w-4" />
               <span>A/B Tests</span>
-            </button>
+            </button> */}
           </div>
 
           <div className="flex items-center gap-4">
