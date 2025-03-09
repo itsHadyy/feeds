@@ -28,7 +28,7 @@ export class XMLManager {
   public parseXMLString(xmlString: string): XMLData {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
-    
+
     const parseError = xmlDoc.getElementsByTagName('parsererror');
     if (parseError.length > 0) {
       throw new Error('Invalid XML format');
@@ -42,13 +42,14 @@ export class XMLManager {
     const schema = new Map<string, { required?: boolean; helpText?: string }>();
     const itemsData: Record<string, string>[] = [];
 
-    Array.from(items).forEach(item => {
+    Array.from(items).forEach((item) => {
       const itemData: Record<string, string> = {};
-      Array.from(item.children).forEach(child => {        
+      Array.from(item.children).forEach((child) => {
+        const nodeName = child.nodeName;
         if (!schema.has(nodeName)) {
           schema.set(nodeName, {
             required: child.hasAttribute('required'),
-            helpText: child.getAttribute('description') || undefined
+            helpText: child.getAttribute('description') || undefined,
           });
         }
 
@@ -61,21 +62,26 @@ export class XMLManager {
 
     const schemaArray = Array.from(schema.entries()).map(([name, props]) => ({
       name,
-      ...props
+      ...props,
     }));
 
     return {
       items: itemsData,
-      schema: schemaArray
+      schema: schemaArray,
     };
   }
 
-  public downloadXML(xmlString: string = this.generateXML()): void {
+  public generateDownloadLink(xmlString: string = this.generateXML()): string {
+    const blob = new Blob([xmlString], { type: 'text/xml' });
+    return URL.createObjectURL(blob);
+  }
+
+  public downloadXML(xmlString: string = this.generateXML(), fileName: string = 'transformed.xml'): void {
     const blob = new Blob([xmlString], { type: 'text/xml' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'transformed.xml';
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

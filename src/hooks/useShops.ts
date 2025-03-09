@@ -4,8 +4,11 @@ import { customAlphabet } from "nanoid";
 interface Shop {
     id: string;
     name: string;
-    xmlContent?: string; // Store XML data as a string
-    productCount?: number; // Add product count
+    xmlContent?: string;
+    productCount?: number;
+    comments?: string;
+    abTests?: string[];
+    isLocked?: boolean;
 }
 
 const STORAGE_KEY = "shops";
@@ -77,7 +80,41 @@ const useShops = () => {
         }
     };
 
-    return { shops, addShop, deleteShop, updateShop, uploadXMLToShop };
+    const addComment = useCallback((shopId: string, comment: string) => {
+        setShops((prevShops) => {
+            const newShops = prevShops.map((shop) =>
+                shop.id === shopId ? { ...shop, comments: comment } : shop
+            );
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(newShops));
+            return newShops;
+        });
+    }, []);
+
+    // Add A/B test to a shop
+    const addABTest = useCallback((shopId: string, abTest: string) => {
+        setShops((prevShops) => {
+            const newShops = prevShops.map((shop) =>
+                shop.id === shopId
+                    ? { ...shop, abTests: [...(shop.abTests || []), abTest] }
+                    : shop
+            );
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(newShops));
+            return newShops;
+        });
+    }, []);
+
+    // Toggle lock state for a shop
+    const toggleLock = useCallback((shopId: string) => {
+        setShops((prevShops) => {
+            const newShops = prevShops.map((shop) =>
+                shop.id === shopId ? { ...shop, isLocked: !shop.isLocked } : shop
+            );
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(newShops));
+            return newShops;
+        });
+    }, []);
+
+    return { shops, addShop, deleteShop, updateShop, uploadXMLToShop, addComment, addABTest, toggleLock };
 };
 
 export default useShops;

@@ -1,30 +1,50 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { FieldOption } from '../types/mapping';
 
-export const useMappingField = (initialValue: string, fieldName: string) => {
-  const [state, setState] = useState({
-    mappingType: 'rename',
-    selectedField: initialValue || '',
-    selectedFields: [] as FieldOption[],
-    separator: 'none',
-    isLocked: fieldName === 'id', // Lock the id field by default
-  });
+interface MappingFieldState {
+  mappingType: string;
+  selectedField: string;
+  selectedFields: FieldOption[];
+  separator: string;
+  isLocked: boolean;
+}
 
+export const useMappingField = (initialValue: string, fieldName: string) => {
+  // Load initial state from localStorage or use defaults
+  const loadState = (): MappingFieldState => {
+    const savedState = localStorage.getItem(`mappingFieldState-${fieldName}`);
+    return savedState
+      ? JSON.parse(savedState)
+      : {
+        mappingType: 'rename',
+        selectedField: initialValue || '',
+        selectedFields: [],
+        separator: 'none',
+        isLocked: fieldName === 'id', // Lock the id field by default
+      };
+  };
+
+  const [state, setState] = useState<MappingFieldState>(loadState);
   const [dropdownState, setDropdownState] = useState({
     activeDropdown: null as string | null,
     isFieldDropdownOpen: false,
   });
 
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(`mappingFieldState-${fieldName}`, JSON.stringify(state));
+  }, [state, fieldName]);
+
   const toggleDropdown = useCallback((dropdownName: string) => {
     if (state.isLocked) return;
-    
+
     if (dropdownName === 'field') {
-      setDropdownState(prev => ({
+      setDropdownState((prev) => ({
         ...prev,
         isFieldDropdownOpen: !prev.isFieldDropdownOpen,
       }));
     } else {
-      setDropdownState(prev => ({
+      setDropdownState((prev) => ({
         ...prev,
         activeDropdown: prev.activeDropdown === dropdownName ? null : dropdownName,
       }));
@@ -33,15 +53,15 @@ export const useMappingField = (initialValue: string, fieldName: string) => {
 
   const handleMappingTypeChange = useCallback((type: string) => {
     if (state.isLocked) return;
-    
-    setState(prev => ({
+
+    setState((prev: MappingFieldState) => ({
       ...prev,
       mappingType: type,
       selectedFields: type === 'combine' ? [] : prev.selectedFields,
       selectedField: type === 'combine' ? '' : prev.selectedField,
     }));
-    
-    setDropdownState(prev => ({
+
+    setDropdownState((prev) => ({
       ...prev,
       activeDropdown: null,
     }));
@@ -50,9 +70,9 @@ export const useMappingField = (initialValue: string, fieldName: string) => {
   const handleFieldSelect = useCallback((field: FieldOption, callback?: () => void) => {
     if (state.isLocked || !field) return;
 
-    setState(prev => {
+    setState((prev: MappingFieldState) => {
       if (prev.mappingType === 'combine') {
-        if (!prev.selectedFields.some(f => f.value === field.value)) {
+        if (!prev.selectedFields.some((f) => f.value === field.value)) {
           return {
             ...prev,
             selectedFields: [...prev.selectedFields, field],
@@ -60,7 +80,7 @@ export const useMappingField = (initialValue: string, fieldName: string) => {
         }
         return prev;
       }
-      
+
       return {
         ...prev,
         selectedField: field.label || '',
@@ -68,7 +88,7 @@ export const useMappingField = (initialValue: string, fieldName: string) => {
     });
 
     if (state.mappingType !== 'combine') {
-      setDropdownState(prev => ({
+      setDropdownState((prev) => ({
         ...prev,
         isFieldDropdownOpen: false,
       }));
@@ -81,19 +101,19 @@ export const useMappingField = (initialValue: string, fieldName: string) => {
 
   const handleRemoveField = useCallback((value: string) => {
     if (state.isLocked) return;
-    
-    setState(prev => ({
+
+    setState((prev: MappingFieldState) => ({
       ...prev,
-      selectedFields: prev.selectedFields.filter(f => f.value !== value),
+      selectedFields: prev.selectedFields.filter((f) => f.value !== value),
     }));
   }, [state.isLocked]);
 
   const toggleLock = useCallback(() => {
-    setState(prev => ({
+    setState((prev: MappingFieldState) => ({
       ...prev,
       isLocked: !prev.isLocked,
     }));
-    
+
     if (!state.isLocked) {
       setDropdownState({
         activeDropdown: null,
@@ -104,8 +124,8 @@ export const useMappingField = (initialValue: string, fieldName: string) => {
 
   const setSeparator = useCallback((separator: string) => {
     if (state.isLocked) return;
-    
-    setState(prev => ({
+
+    setState((prev: MappingFieldState) => ({
       ...prev,
       separator: separator || 'none',
     }));

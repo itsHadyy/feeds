@@ -11,6 +11,7 @@ import {
 import { ChevronDownIcon } from "@radix-ui/react-icons";
 import { CopyIcon } from "@radix-ui/react-icons";
 import { EditIcon, SaveIcon, TrashIcon, CheckIcon } from "lucide-react";
+import { XMLManager } from "../services/XMLManager"; // Import XMLManager
 
 interface ShopDashboardProps {
     onSelectShop: (shopId: string) => void;
@@ -34,6 +35,15 @@ const ShopDashboard: React.FC<ShopDashboardProps> = ({ onSelectShop }) => {
             console.error("Error parsing XML:", err);
             return 0;
         }
+    };
+
+    // Helper function to generate a downloadable XML link using XMLManager
+    const getXMLDownloadLink = (xmlContent: string): string => {
+        const xmlManager = new XMLManager();
+        const parsedData = xmlManager.parseXMLString(xmlContent); // Parse the XML content
+        xmlManager.setData(parsedData); // Initialize XMLManager with the parsed data
+        const modifiedXML = xmlManager.generateXML(); // Generate modified XML
+        return xmlManager.generateDownloadLink(modifiedXML); // Generate download link
     };
 
     const handleEditClick = (shopId: string, currentName: string) => {
@@ -103,14 +113,11 @@ const ShopDashboard: React.FC<ShopDashboardProps> = ({ onSelectShop }) => {
                             <td style={{ border: "1px solid #ddd", padding: "8px" }}>
                                 {shop.xmlContent ? (
                                     <a
-                                        href={shop.xmlContent}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                                        href={getXMLDownloadLink(shop.xmlContent)}
+                                        download="transformed.xml" // Set the filename to "transformed.xml"
+                                        onClick={(e) => e.stopPropagation()} // Prevent row click
                                     >
-                                        <CopyIcon
-                                            className="inline-block ml-2 cursor-pointer"
-                                            onClick={() => handleCopyLink(shop.xmlContent || "")}
-                                        />
+                                        Download XML
                                     </a>
                                 ) : (
                                     "N/A"

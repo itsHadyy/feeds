@@ -68,7 +68,7 @@ const MappingField: React.FC<MappingFieldProps> = ({
 
   const handleFieldSelection = (field: FieldOption) => {
     if (!field) return;
-    
+
     handleFieldSelect(field, () => {
       if (mappingType === 'rename') {
         onFieldChange({
@@ -77,12 +77,11 @@ const MappingField: React.FC<MappingFieldProps> = ({
           sourceField: field.value
         });
       } else if (mappingType === 'combine') {
-        // Create a field option that includes the type
         const fieldWithType: FieldOption = {
           ...field,
-          type: field.type || 'custom' // Use 'custom' for manually entered values
+          type: field.type || 'custom'
         };
-        
+
         onFieldChange({
           targetField: fieldName,
           type: 'combine',
@@ -140,39 +139,46 @@ const MappingField: React.FC<MappingFieldProps> = ({
           <div className="flex items-center gap-4">
             <button
               onClick={onCommentClick}
-              className="btn-sm flex items-center gap-2 text-gray-600 hover:text-gray-800"
+              disabled={isLocked}
+              className={`btn-sm flex items-center gap-2 ${isLocked ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-800'
+                }`}
             >
               <MessageSquare className="h-4 w-4" />
               <span>Comments</span>
             </button>
             <button
               onClick={onABTestClick}
-              className="btn-sm flex items-center gap-2 text-gray-600 hover:text-gray-800"
+              disabled={isLocked}
+              className={`btn-sm flex items-center gap-2 ${isLocked ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-800'
+                }`}
             >
               <Shapes className="h-4 w-4" />
               <span>A/B Tests</span>
             </button>
           </div>
-          <button
-            onClick={toggleLock}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              isLocked
+
+          <div className="flex items-center gap-4">
+            {/* Lock/Unlock Button */}
+            <button
+              onClick={toggleLock}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${isLocked
                 ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-            }`}
-          >
-            {isLocked ? (
-              <>
-                <Lock className="h-4 w-4" />
-                <span>Unlock</span>
-              </>
-            ) : (
-              <>
-                <Unlock className="h-4 w-4" />
-                <span>Lock</span>
-              </>
-            )}
-          </button>
+                }`}
+            >
+              {isLocked ? (
+                <>
+                  <Lock className="h-4 w-4" />
+                  <span>Unlock</span>
+                </>
+              ) : (
+                <>
+                  <Unlock className="h-4 w-4" />
+                  <span>Lock</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Mapping Controls */}
@@ -195,14 +201,13 @@ const MappingField: React.FC<MappingFieldProps> = ({
               <button
                 onClick={() => toggleDropdown('mapping-type')}
                 disabled={isLocked}
-                className={`w-full px-3 py-2 text-left text-sm border rounded-md flex items-center justify-between bg-white ${
-                  isLocked ? 'opacity-75 cursor-not-allowed' : 'hover:bg-gray-50'
-                }`}
+                className={`w-full px-3 py-2 text-left text-sm border rounded-md flex items-center justify-between bg-white ${isLocked ? 'opacity-75 cursor-not-allowed' : 'hover:bg-gray-50'
+                  }`}
               >
                 <span>{mappingTypes.find(t => t.value === mappingType)?.label || 'Rename'}</span>
                 <ChevronDown className="h-4 w-4" />
               </button>
-              
+
               {activeDropdown === 'mapping-type' && !isLocked && (
                 <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg">
                   {mappingTypes.map((type) => (
@@ -239,23 +244,21 @@ const MappingField: React.FC<MappingFieldProps> = ({
                   onChange={handleStaticValueChange}
                   disabled={isLocked}
                   placeholder="Enter static value..."
-                  className={`w-full px-3 py-2 text-sm border rounded-md ${
-                    isLocked ? 'bg-gray-50 cursor-not-allowed' : ''
-                  }`}
+                  className={`w-full px-3 py-2 text-sm border rounded-md ${isLocked ? 'bg-gray-50 cursor-not-allowed' : ''
+                    }`}
                 />
               ) : (
                 <button
                   onClick={handleAddField}
                   disabled={isLocked}
-                  className={`w-full px-3 py-2 text-left text-sm border rounded-md flex items-center justify-between bg-white ${
-                    isLocked ? 'opacity-75 cursor-not-allowed' : 'hover:bg-gray-50'
-                  }`}
+                  className={`w-full px-3 py-2 text-left text-sm border rounded-md flex items-center justify-between bg-white ${isLocked ? 'opacity-75 cursor-not-allowed' : 'hover:bg-gray-50'
+                    }`}
                 >
                   <span>{selectedField || 'Select field'}</span>
                   <ChevronDown className="h-4 w-4" />
                 </button>
               )}
-              
+
               {!isLocked && (
                 <FieldSelectionDropdown
                   isOpen={isFieldDropdownOpen}
@@ -275,17 +278,15 @@ const MappingField: React.FC<MappingFieldProps> = ({
             <div className="flex rounded-md overflow-hidden border">
               <button
                 disabled={isLocked}
-                className={`flex-1 px-3 py-2 text-sm bg-white border-r ${
-                  isLocked ? 'opacity-75 cursor-not-allowed' : 'hover:bg-gray-50'
-                }`}
+                className={`flex-1 px-3 py-2 text-sm bg-white border-r ${isLocked ? 'opacity-75 cursor-not-allowed' : 'hover:bg-gray-50'
+                  }`}
               >
                 All Products
               </button>
               <button
                 disabled={isLocked}
-                className={`flex-1 px-3 py-2 text-sm bg-white ${
-                  isLocked ? 'opacity-75 cursor-not-allowed' : 'hover:bg-gray-50'
-                }`}
+                className={`flex-1 px-3 py-2 text-sm bg-white ${isLocked ? 'opacity-75 cursor-not-allowed' : 'hover:bg-gray-50'
+                  }`}
               >
                 Only IF
               </button>
@@ -297,11 +298,10 @@ const MappingField: React.FC<MappingFieldProps> = ({
             <button
               onClick={onEditClick}
               disabled={isLocked}
-              className={`p-2 rounded-md ${
-                isLocked
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
+              className={`p-2 rounded-md ${isLocked
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-600 hover:text-gray-800'
+                }`}
             >
               <PenSquare className="h-4 w-4" />
             </button>
