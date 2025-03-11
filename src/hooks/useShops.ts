@@ -1,12 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { customAlphabet } from "nanoid";
 
+interface Comment {
+    text: string;
+    timestamp: Date;
+}
+
 interface Shop {
     id: string;
     name: string;
     xmlContent?: string;
     productCount?: number;
-    comments?: string;
+    comments?: Comment[];
     abTests?: string[];
     isLocked?: boolean;
 }
@@ -83,9 +88,32 @@ const useShops = () => {
     const addComment = useCallback((shopId: string, comment: string) => {
         setShops((prevShops) => {
             const newShops = prevShops.map((shop) =>
-                shop.id === shopId ? { ...shop, comments: comment } : shop
+                shop.id === shopId
+                    ? {
+                        ...shop,
+                        comments: [
+                            ...(shop.comments || []),
+                            { text: comment, timestamp: new Date() },
+                        ],
+                    }
+                    : shop
             );
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(newShops));
+            return newShops;
+        });
+    }, []);
+
+    const deleteComment = useCallback((shopId: string, commentIndex: number) => {
+        setShops((prevShops) => {
+            const newShops = prevShops.map((shop) =>
+                shop.id === shopId
+                    ? {
+                        ...shop,
+                        comments: shop.comments?.filter(
+                            (_, index) => index !== commentIndex
+                        ),
+                    }
+                    : shop
+            );
             return newShops;
         });
     }, []);
@@ -114,7 +142,17 @@ const useShops = () => {
         });
     }, []);
 
-    return { shops, addShop, deleteShop, updateShop, uploadXMLToShop, addComment, addABTest, toggleLock };
+    return {
+        shops,
+        addShop,
+        deleteShop,
+        updateShop,
+        uploadXMLToShop,
+        addComment,
+        deleteComment,
+        addABTest,
+        toggleLock,
+    };
 };
 
 export default useShops;

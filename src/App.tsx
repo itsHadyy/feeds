@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Save, Undo, Settings, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'; // Import icons
+import { Save, Undo, Settings, ArrowLeft, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react'; // Import icons
 import MappingField from './components/MappingField';
 import XMLUploader from './components/XMLUploader';
 import ShopDashboard from './components/ShopDashboard';
@@ -13,7 +13,11 @@ function App() {
   const [mappingFields, setMappingFields] = useState<XMLField[]>([]);
   const [mappings, setMappings] = useState<XMLMapping[]>([]);
   const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
-  const { shops, addShop, deleteShop, updateShop, uploadXMLToShop } = useShops();
+  const { shops, addShop, deleteShop, updateShop, uploadXMLToShop, addComment, deleteComment } = useShops();
+
+    // State for comments dialog
+    const [showCommentsDialog, setShowCommentsDialog] = useState(false);
+    const [newComment, setNewComment] = useState('');
 
   // State for comments, preview, and unsaved changes
   const [comments, setComments] = useState<{ [fieldName: string]: string }>({});
@@ -184,6 +188,21 @@ function App() {
     setLastSavedState({ mappings: [], comments: {}, mappingFields: newMappingFields }); // Initialize last saved state
   }, [xmlManager]);
 
+  // Handle comment submission
+  const handleAddComment = () => {
+    if (newComment.trim() && selectedShopId) {
+      addComment(selectedShopId, newComment);
+      setNewComment('');
+    }
+  };
+
+  // Handle comment deletion
+  const handleDeleteComment = (commentIndex: number) => {
+    if (selectedShopId) {
+      deleteComment(selectedShopId, commentIndex);
+    }
+  };
+
   // Apply field mappings and generate XML
   const handleApplyChanges = useCallback(() => {
     const xmlData = xmlManager.getData();
@@ -278,6 +297,8 @@ function App() {
   };
 
   const xmlData = xmlManager.getData();
+  const selectedShop = shops.find((shop) => shop.id === selectedShopId);
+  const commentsList = selectedShop?.comments || [];
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -310,10 +331,73 @@ function App() {
               </div>
             </div>
 
+            {/* Comments Button */}
+            <button
+              onClick={() => setShowCommentsDialog(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
+            >
+              <MessageCircle className="h-4 w-4 inline-block mr-2" />
+              Comments
+            </button>
+
             {/* Shop Name */}
             <h2 className="text-2xl font-semibold mt-4">
               {shops.find((shop) => shop.id === selectedShopId)?.name}
             </h2>
+
+            {/* Comments Dialog */}
+            {showCommentsDialog && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
+                  <h2 className="text-lg font-semibold mb-4">Comments</h2>
+                  <div className="space-y-4">
+                    {/* Display Comments */}
+                    {commentsList.map((comment, index) => (
+                      <div key={index} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                        <div>
+                          <p className="text-gray-700">{comment.text}</p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(comment.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteComment(index)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Add Comment */}
+                  <div className="mt-6">
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Add a comment..."
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    />
+                    <button
+                      onClick={handleAddComment}
+                      className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                      Add Comment
+                    </button>
+                  </div>
+
+                  {/* Close Dialog */}
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      onClick={() => setShowCommentsDialog(false)}
+                      className="px-4 py-2 text-sm bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Settings View */}
             {showSettings ? (
@@ -510,7 +594,7 @@ function App() {
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 }
 

@@ -13,7 +13,7 @@ interface MappingFieldProps {
   helpText?: string;
   onFieldChange: (mapping: XMLMapping) => void;
   onPreviewClick: () => void;
-  onCommentClick: () => void;
+  onCommentClick: () => void; // Updated to handle field-specific comments
   onABTestClick: () => void;
   onEditClick: () => void;
 }
@@ -137,8 +137,9 @@ const MappingField: React.FC<MappingFieldProps> = ({
         {/* Header Actions */}
         <div className="flex items-center justify-between mb-6 border-b pb-4">
           <div className="flex items-center gap-4">
+            {/* Comments Button */}
             <button
-              onClick={onCommentClick}
+              onClick={onCommentClick} // This will trigger the field-specific comment dialog
               disabled={isLocked}
               className={`btn-sm flex items-center gap-2 ${isLocked ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-800'
                 }`}
@@ -146,15 +147,6 @@ const MappingField: React.FC<MappingFieldProps> = ({
               <MessageSquare className="h-4 w-4" />
               <span>Comments</span>
             </button>
-            {/* <button
-              onClick={onABTestClick}
-              disabled={isLocked}
-              className={`btn-sm flex items-center gap-2 ${isLocked ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-800'
-                }`}
-            >
-              <Shapes className="h-4 w-4" />
-              <span>A/B Tests</span>
-            </button> */}
           </div>
 
           <div className="flex items-center gap-4">
